@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABKSWAGG - Магазин одежды</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Навигация */
+        .navbar {
+            background: #111;
+            padding: 15px 0;
+            margin-bottom: 30px;
+        }
+        
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .nav-item {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .nav-item:hover {
+            background: #333;
+            border-radius: 5px;
+        }
+        
+        /* Заголовок */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        
+        .header p {
+            color: rgba(255,255,255,0.8);
+            font-size: 1.1em;
+        }
+        
+        /* Сетка товаров */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 80px;
+        }
+        
+        .product-card {
+            background: #111;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(255,255,255,0.1);
+            transition: transform 0.3s ease;
+            border: 1px solid #333;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(255,255,255,0.15);
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-bottom: 1px solid #333;
+        }
+        
+        .product-info {
+            padding: 20px;
+        }
+        
+        .product-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        
+        .product-price {
+            color: #fff;
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .sizes-container {
+            margin-bottom: 15px;
+        }
+        
+        .sizes-title {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+        
+        .sizes {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .size-btn {
+            padding: 8px 12px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            background: #000;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .size-btn.selected {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+        }
+        
+        .add-to-cart {
+            background: #000;
+            color: white;
+            border: 2px solid #fff;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .add-to-cart:hover {
+            background: #fff;
+            color: #000;
+        }
+        
+        /* Кнопка корзины */
+        .cart-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #000;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            box-shadow: 0 5px 20px rgba(255,255,255,0.2);
+            cursor: pointer;
+            z-index: 1000;
+            transition: transform 0.2s ease;
+            border: 2px solid #fff;
+        }
+        
+        .cart-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .cart-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #fff;
+            color: #000;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            font-size: 0.8em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Уведомления */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #000;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(255,255,255,0.2);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            border: 1px solid #333;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #000;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid #333;
+            color: white;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.5em;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            font-size: 16px;
+            background: #000;
+            color: white;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            padding: 12px 20px;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            background: #000;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .modal-btn:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        /* Сообщение о подтверждении заказа */
+        .confirmation {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: #000;
+            border-radius: 10px;
+            border: 1px solid #333;
+            margin-top: 20px;
+        }
+
+        .confirmation h3 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .confirmation p {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .delivery-time {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <div class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-item">Главная</a>
+            <a href="#" class="nav-item">Каталог</a>
+            <a href="#" class="nav-item">Корзина</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>ABKSWAGG</h1>
+            <p>Эксклюзивная одежда в черно-белом стиле</p>
+        </div>
+        
+        <div class="products-grid">
+            <!-- Товар 1 -->
+            <div class="product-card">
+                <img src="https://via.placeholder.com/400x300/000/fff?text=ABKSWAGG+Футболка" alt="Футболка" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Футболка оверсайз</h3>
+                    <div class="product-price">1 999 ₽</div>
+                    <div class="sizes-container">
+                        <div class="sizes-title">Размер:</div>
+                        <div class="sizes">
+                            <button class="size-btn" onclick="selectSize(this, 'S')">S</button>
+                            <button class="size-btn" onclick="selectSize(this, 'M')">M</button>
+                            <button class="size-btn" onclick="selectSize(this, 'L')">L</button>
+                            <button class="size-btn" onclick="selectSize(this, 'XL')">XL</button>
+                        </div>
+                    </div>
+                    <button class="add-to-cart" onclick="addToCart('Футболка оверсайз', 1999, 'https://via.placeholder.com/400x300/000/fff?text=ABKSWAGG+Футболка')">
+                        🛒 Добавить в корзину
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Товар 2 -->
+            <div class="product-card">
+                <img src="https://via.placeholder.com/400x300/000/fff?text=ABKSWAGG+Худи" alt="Худи" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Худи с капюшоном</h3>
+                    <div class="product-price">4 499 ₽</div>
+                    <div class="sizes-container">
+                        <div class="sizes-title">Размер:</div>
+                        <div class="sizes">
+                            <button class="size-btn" onclick="selectSize(this, 'M')">M</button>
+                            <button class="size-btn" onclick="selectSize(this, 'L')">L</button>
+                            <button class="size-btn" onclick="selectSize(this, 'XL')">XL</button>
+                            <button class="size-btn" onclick="selectSize(this, 'XXL')">XXL</button>
+                        </div>
+                    </div>
+                    <button class="add-to-cart" onclick="addToCart('Худи с капюшоном', 4499, 'https://via.placeholder.com/400x300/000/fff?text=ABKSWAGG+Худи')">
+                        🛒 Добавить в корзину
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Товар 3 -->
+            <div class="product-card">
+                <img src="https://via.placeholder.com/400x300/000/fff?text=ABKSWAGG+Штаны" alt="Штаны" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Спортивные штаны</h3>
+                    <div class="product-price">2 799 ₽</div>
+                    <div class="sizes-container">
+                        <div class="sizes-title">Размер:</div>
+                        <div class="sizes">
+                            <button class="size-btn" onclick="selectSize(this, 'S')">S</button>
+                            <button class="size-btn" onclick="selectSize(this, 'M')">M</button>
+                            <button class="size-btn" onclick="selectSize(this, 'L')">L</button>
+                            <button class="size-btn" onclick="selectSize(this, 'XL')">XL</button>
+                        </div>
+                    </div>
+                    <button class="add-to-cart" onclick="addToCart('Спортивные штаны', 2799, 'https://via.placeholder.com/400x300/000/fff?text=ABKSWAGG+Штаны')">
+                        🛒 Добавить в корзину
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Товар 4 -->
+            <div class="product-card">
+                <img src="https://via.placeholder.com/400x300/000/fff?text=ABKSWAGG+Куртка" alt="Куртка" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Куртка утепленная</h3>
+                    <div class="product-price">5 999 ₽</div>
+                    <div class="sizes-container">
+                        <div class="sizes-title">Размер:</div>
+                        <div class="sizes">
+                            <button class="size-btn" onclick="selectSize(this, 'M')">M</button>
+                            <button class="size-btn" onclick="selectSize(this, 'L')">L</button>
+                            <button class="size-btn" onclick="selectSize(this, 'XL')">XL</button>
+                            <button class="size-btn" onclick="selectSize(this, 'XXL')">XXL</button>
+                        </div>
+                    </div>
+                    <button class="add-to-cart" onclick="addToCart('Куртка утепленная', 5999, 'https://via.placeholder.com/400x300/000/fff?text=ABKSWAGG+Куртка')">
+                        🛒 Добавить в корзину
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="cart-btn" onclick="showCart()">
+        🛒
+        <span class="cart-count" id="cart-count">0</span>
+    </div>
+    
+    <div class="notification" id="notification">
+        Товар добавлен в корзину! ✅
+    </div>
+
+    <!-- Модальное окно для оформления заказа -->
+    <div class="modal" id="order-modal">
+        <div class="modal-content">
+            <h3>📦 Оформление заказа</h3>
+            <div id="order-form">
+                <input type="text" id="customer-name" class="modal-input" placeholder="👤 Ваше имя">
+                <input type="tel" id="customer-phone" class="modal-input" placeholder="📞 Ваш телефон">
+                <input type="text" id="shipping-address" class="modal-input" placeholder="🏠 Адрес доставки">
+                <div class="modal-buttons">
+                    <button class="modal-btn" onclick="closeModal()">Отмена</button>
+                    <button class="modal-btn" onclick="submitOrder()">Оформить заказ</button>
+                </div>
+            </div>
+            
+            <div id="order-confirmation" class="confirmation">
+                <h3>✅ Доставка подтверждена</h3>
+                <p>Спасибо за ваш заказ!</p>
+                <p>Ожидайте доставку в течение</p>
+                <div class="delivery-time" id="delivery-time"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cart = [];
+        let selectedSize = '';
+        let currentProduct = null;
+
+        function selectSize(btn, size) {
+            const productCard = btn.closest('.product-card');
+            productCard.querySelectorAll('.size-btn').forEach(b => {
+                b.classList.remove('selected');
+            });
+            
+            btn.classList.add('selected');
+            selectedSize = size;
+            currentProduct = productCard;
+        }
+
+        function addToCart(name, price, image) {
+            if (!selectedSize) {
+                showNotification('❌ Выберите размер!');
+                return;
+            }
+            
+            cart.push({
+                name: name,
+                price: price,
+                size: selectedSize,
+                quantity: 1,
+                image: image
+            });
+            
+            updateCartCount();
+            showNotification('✅ Товар добавлен в корзину!');
+            
+            selectedSize = '';
+            if (currentProduct) {
+                currentProduct.querySelectorAll('.size-btn').forEach(b => {
+                    b.classList.remove('selected');
+                });
+            }
+        }
+
+        function updateCartCount() {
+            document.getElementById('cart-count').textContent = cart.length;
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+
+        function showCart() {
+            if (cart.length === 0) {
+                showNotification('🛒 Корзина пуста!');
+                return;
+            }
+            document.getElementById('order-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('order-modal').style.display = 'none';
+        }
+
+        function calculateDeliveryTime() {
+            const now = new Date();
+            const deliveryDate = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3 дня от текущей даты
+            return deliveryDate.toLocaleString('ru-RU');
+        }
+
+        async function submitOrder() {
+            const name = document.getElementById('customer-name').value;
+            const phone = document.getElementById('customer-phone').value;
+            const address = document.getElementById('shipping-address').value;
+
+            if (!name || !phone || !address) {
+                showNotification('❌ Заполните все поля!');
+                return;
+            }
+
+            const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            const orderData = {
+                products: cart,
+                totalAmount: totalAmount,
+                customerName: name,
+                customerPhone: phone,
+                shippingAddress: address,
+                shopName: "ABKSWAGG"
+            };
+
+            try {
+                // Отправка на сервер
+                const response = await fetch('https://my-tg-shop.onrender.com/webhook', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(orderData)
+                });
+
+                if (response.ok) {
+                    // Показываем подтверждение
+                    document.getElementById('order-form').style.display = 'none';
+                    document.getElementById('order-confirmation').style.display = 'block';
+                    document.getElementById('delivery-time').textContent = calculateDeliveryTime();
+                    
+                    // Очищаем корзину через 5 секунд
+                    setTimeout(() => {
+                        cart = [];
+                        updateCartCount();
+                        closeModal();
+                        document.getElementById('order-form').style.display = 'block';
+                        document.getElementById('order-confirmation').style.display = 'none';
+                        
+                        // Очищаем поля формы
+                        document.getElementById('customer-name').value = '';
+                        document.getElementById('customer-phone').value = '';
+                        document.getElementById('shipping-address').value = '';
+                    }, 5000);
+                } else {
+                    showNotification('❌ Ошибка при оформлении заказа');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('❌ Ошибка сети. Попробуйте еще раз.');
+            }
+        }
+    </script>
+</body>
+</html>
