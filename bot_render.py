@@ -1,24 +1,32 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 import json
 from datetime import datetime
 import os
-import asyncio
-from aiohttp import web
+import logging
+from flask import Flask, request, jsonify
+
+# Настройка логирования
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 # Настройки
 BOT_TOKEN = os.getenv('BOT_TOKEN', '8290686679:AAFt8_v9X_yzeLeOhjhlk4B-eirYOGOsT5Q')
 ADMIN_CHAT_ID = os.getenv('ADMIN_CHAT_ID', '5127569065')
 PORT = int(os.getenv('PORT', 10000))
 
-application = None
+# Создаем Flask приложение
+app = Flask(__name__)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def start(update: Update, context: CallbackContext) -> None:
     """Команда /start с кнопками"""
     keyboard = [
         [InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url="https://my-tg-shop.onrender.com"))],
         [InlineKeyboardButton("👤 Мой профиль", callback_data="profile")],
-        [InlineKeyboardButton("📞 Поддержка", url="https://t.me/your_username")]
+        [InlineKeyboardButton("📞 Поддержка", url="https://t.me.com")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -37,13 +45,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 Нажмите кнопку «Открыть магазин» ниже 👇
 """.strip()
 
-    await update.message.reply_text(
+    update.message.reply_text(
         welcome_text,
         reply_markup=reply_markup,
         parse_mode='Markdown'
     )
 
-async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def handle_web_app_data(update: Update, context: CallbackContext) -> None:
     """Обработка заказов из Web App"""
     try:
         data = json.loads(update.effective_message.web_app_data.data)
@@ -81,26 +89,41 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
 ⏰ *Время получения:* {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}
 """
         
-        await context.bot.send_message(
+        context.bot.send_message(
             chat_id=ADMIN_CHAT_ID, 
             text=order_text, 
             parse_mode='Markdown'
         )
         
-        await update.message.reply_text(
+        update.message.reply_text(
             "✅ *Заказ принят!*\nСпасибо за покупку! Мы свяжемся с вами soon.",
             parse_mode='Markdown'
         )
         
     except Exception as e:
-        print(f"Ошибка обработки заказа: {e}")
-        await update.message.reply_text("❌ Ошибка при обработке заказа.")
+        logger.error(f"Ошибка обработки заказа: {e}")
+        update.message.reply_text("❌ Ошибка при обработке заказа.")
 
-async def handle_webhook(request):
+def handle_message(update: Update, context: CallbackContext):
+    """Обработка обычных сообщений"""
+    if update.message.text and not update.message.text.startswith('/'):
+        keyboard = [
+            [InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url="https://my-tg-shop.onrender.com"))]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        update.message.reply_text(
+            "👋 Для открытия магазина используйте команду /start\n\n"
+            "Или нажмите кнопку ниже:",
+            reply_markup=reply_markup
+        )
+
+@app.route('/webhook', methods=['POST'])
+def handle_webhook():
     """Обработчик вебхуков от сайта"""
     try:
-        data = await request.json()
-        print(f"Получен заказ: {data}")
+        data = request.json
+        logger.info(f"Получен заказ: {data}")
         
         # Форматируем текст заказа
         order_text = f"""
@@ -133,101 +156,42 @@ async def handle_webhook(request):
 """
         
         # Отправляем заказ администратору
-        await application.bot.send_message(
+        updater.bot.send_message(
             chat_id=ADMIN_CHAT_ID, 
             text=order_text, 
             parse_mode='Markdown'
         )
         
-        return web.Response(text='Order processed successfully!')
+        return jsonify({'status': 'success'})
             
     except Exception as e:
-        print(f"Webhook error: {e}")
-        return web.Response(text='ERROR', status=500)
+        logger.error(f"Webhook error: {e}")
+        return jsonify({'status': 'error'}), 500
 
-async def health_check(request):
+@app.route('/health', methods=['GET'])
+def health_check():
     """Проверка здоровья сервера"""
-    return web.Response(text='Bot is running!')
+    return jsonify({'status': 'running'})
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработка обычных сообщений"""
-    if update.message.text and not update.message.text.startswith('/'):
-        keyboard = [
-            [InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url="https://my-tg-shop.onrender.com"))]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await update.message.reply_text(
-            "👋 Для открытия магазина используйте команду /start\n\n"
-            "Или нажмите кнопку ниже:",
-            reply_markup=reply_markup
-        )
-
-async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработка callback-запросов"""
-    query = update.callback_query
-    await query.answer()
-    
-    if query.data == "profile":
-        await query.edit_message_text(
-            "👤 *Ваш профиль*\n\n"
-            f"🆔 ID: `{query.from_user.id}`\n"
-            f"👤 Имя: {query.from_user.first_name}\n"
-            f"📧 Username: @{query.from_user.username if query.from_user.username else 'не указан'}\n\n"
-            "Для заказа товаров нажмите кнопку ниже:",
-            parse_mode='Markdown',
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url="https://my-tg-shop.onrender.com"))]
-            ])
-        )
-
-async def telegram_webhook(request):
-    """Обработчик вебхука от Telegram"""
-    try:
-        data = await request.json()
-        update = Update.de_json(data, application.bot)
-        await application.process_update(update)
-        return web.Response(text='OK')
-    except Exception as e:
-        print(f"Telegram webhook error: {e}")
-        return web.Response(text='ERROR', status=500)
-
-async def main():
+def main():
     """Основная функция запуска"""
-    global application
+    global updater
     
-    # Создаем приложение бота
-    application = Application.builder().token(BOT_TOKEN).build()
+    # Создаем updater
+    updater = Updater(BOT_TOKEN, use_context=True)
     
     # Добавляем обработчики
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    dp = updater.dispatcher
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.status_update.web_app_data, handle_web_app_data))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
     
-    # Запускаем бота
-    await application.initialize()
-    await application.start()
+    # Запускаем polling
+    updater.start_polling()
+    logger.info("✅ Бот запущен и готов к работе")
     
-    print("✅ Бот инициализирован")
-    
-    # Создаем HTTP сервер
-    app = web.Application()
-    app.router.add_post('/webhook', handle_webhook)
-    app.router.add_post('/telegram', telegram_webhook)
-    app.router.add_get('/health', health_check)
-    
-    runner = web.AppRunner(app)
-    await runner.setup()
-    
-    site = web.TCPSite(runner, '0.0.0.0', PORT)
-    await site.start()
-    
-    print(f"✅ Сервер запущен на порту {PORT}")
-    print("🌐 Webhook: /webhook")
-    print("📞 Бот готов принимать заказы!")
-    
-    # Бесконечный цикл
-    await asyncio.Future()
+    # Запускаем Flask сервер
+    app.run(host='0.0.0.0', port=PORT, debug=False)
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()
