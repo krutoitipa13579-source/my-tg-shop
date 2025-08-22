@@ -11,6 +11,9 @@ BOT_TOKEN = os.getenv('BOT_TOKEN', '8290686679:AAFt8_v9X_yzeLeOhjhlk4B-eirYOGOsT
 ADMIN_CHAT_ID = int(os.getenv('ADMIN_CHAT_ID', '5127569065'))
 PORT = int(os.getenv('PORT', 3000))  # Render сам назначает порт
 
+# Глобальная переменная для хранения application
+bot_application = None
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     shop_url = "https://krutoitipa13579-source.github.io/my-tg-shop/"
     
@@ -71,8 +74,49 @@ async def web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         
     except Exception as e:
-        print(f"Ошибка: {e}")
+        print(f"Ошибка обработки заказа: {e}")
         await update.message.reply_text("❌ Произошла ошибка при обработке заказа.")
+
+async def handle_order(request):
+    """Обработчик POST-запросов с заказами от магазина"""
+    try:
+        # Получаем данные из запроса
+        data = await request.json()
+        print(f"Получен заказ: {data}")
+        
+        # Формируем текст заказа (аналогично web_app_data)
+        order_text = "🛒 *ЗАКАЗ ИЗ МАГАЗИНА!*\n"
+        order_text += "══════════════════════════\n\n"
+        order_text += f"👤 *Клиент:* {data.get('customerName', 'Не указано')}\n"
+        order_text += f"📞 *Телефон:* `{data.get('customerPhone', 'Не указан')}`\n"
+        order_text += f"🏠 *Адрес:* {data.get('shippingAddress', 'Не указан')}\n\n"
+        order_text += "📦 *Состав заказа:*\n"
+        order_text += "────────────────────────────\n"
+        
+        for i, item in enumerate(data.get('products', []), 1):
+            order_text += f"{i}. *{item['name']}*\n"
+            order_text += f"   • Размер: {item.get('size', 'Не выбран')}\n"
+            order_text += f"   • Цена: {item['price']} руб.\n"
+            order_text += f"   • Кол-во: {item.get('quantity', 1)}\n"
+            order_text += f"   • Сумма: {item['price'] * item.get('quantity', 1)} руб.\n\n"
+        
+        order_text += "────────────────────────────\n"
+        order_text += f"💵 *Общая сумма: {data['totalAmount']} руб.*"
+
+        # Отправляем заказ в Telegram
+        if bot_application:
+            await bot_application.bot.send_message(
+                chat_id=ADMIN_CHAT_ID, 
+                text=order_text, 
+                parse_mode='Markdown'
+            )
+            return web.Response(text='Order processed successfully!')
+        else:
+            return web.Response(status=500, text='Bot not initialized')
+            
+    except Exception as e:
+        print(f"Ошибка обработки заказа: {e}")
+        return web.Response(status=500, text='Error processing order')
 
 async def health_check(request):
     """Простая проверка здоровья для Render"""
@@ -80,26 +124,37 @@ async def health_check(request):
 
 async def main():
     """Запуск бота и веб-сервера"""
+    global bot_application
+    
     # Создаем приложение бота
-    application = Application.builder().token(BOT_TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, web_app_data))
+    bot_application = Application.builder().token(BOT_TOKEN).build()
+    bot_application.add_handler(CommandHandler("start", start))
+    bot_application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, web_app_data))
+    
+    # ОСТАНОВИТЬ ВСЕ ПРЕДЫДУЩИЕ СЕАНСЫ (это важно!)
+    await bot_application.bot.delete_webhook(drop_pending_updates=True)
+    print("✅ Предыдущие сеансы бота остановлены")
     
     # Запускаем бота
-    await application.initialize()
-    await application.start()
+    await bot_application.initialize()
+    await bot_application.start()
+    print("✅ Бот инициализирован и запущен")
     
-    # Создаем простой веб-сервер для Render
+    # Создаем веб-сервер для Render с обработчиком заказов
     app = web.Application()
     app.router.add_get('/health', health_check)
+    app.router.add_post('/webhook', handle_order)  # ✅ ДОБАВЛЕНО!
+    app.router.add_post('/order', handle_order)    # ✅ Дублирующий endpoint на всякий случай
+    
     runner = web.AppRunner(app)
     await runner.setup()
     
     site = web.TCPSite(runner, '0.0.0.0', PORT)
     await site.start()
     
-    print(f"✅ Бот запущен! Сервер слушает порт {PORT}")
+    print(f"✅ Веб-сервер запущен на порту {PORT}")
     print("📞 Бот готов принимать заказы!")
+    print("🌐 Endpoint для заказов: /webhook и /order")
     
     # Бесконечно ждем
     await asyncio.Future()
