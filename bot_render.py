@@ -10,7 +10,7 @@ from aiohttp import web
 BOT_TOKEN = os.getenv('BOT_TOKEN', '8290686679:AAFt8_v9X_yzeLeOhjhlk4B-eirYOGOsT5Q')
 ADMIN_CHAT_ID = os.getenv('ADMIN_CHAT_ID', '5127569065')
 PORT = int(os.getenv('PORT', 10000))
-WEBHOOK_URL = os.getenv('WEBHOOK_URL', 'https://your-render-app.onrender.com')
+WEBHOOK_URL = os.getenv('WEBHOOK_URL', 'https://my-tg-shop.onrender.com')
 
 # Глобальные переменные
 application = None
