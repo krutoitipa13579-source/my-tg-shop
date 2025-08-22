@@ -1,10 +1,8 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
-import json
-from datetime import datetime
 import os
 import logging
 import time
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # Настройка логирования
 logging.basicConfig(
@@ -17,12 +15,11 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = os.getenv('BOT_TOKEN', '8290686679:AAFt8_v9X_yzeLeOhjhlk4B-eirYOGOsT5Q')
 ADMIN_CHAT_ID = os.getenv('ADMIN_CHAT_ID', '5127569065')
 
-def start(update: Update, context: CallbackContext) -> None:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Команда /start с кнопками"""
     keyboard = [
         [InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url="https://my-tg-shop.onrender.com"))],
-        [InlineKeyboardButton("👤 Мой профиль", callback_data="profile")],
-        [InlineKeyboardButton("📞 Поддержка", url="https://t.me.com")]
+        [InlineKeyboardButton("👤 Мой профиль", callback_data="profile")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -33,20 +30,20 @@ def start(update: Update, context: CallbackContext) -> None:
 
 ✨ Преимущества:
 • Быстрая доставка
-• Качественные материалы  
+• Качественные материалы
 • Стильные модели
 • Доступные цены
 
 🛒 Чтобы начать покупки:
-Нажмите кнопку «Открыть магазин» ниже 👇
+Нажмите кнопку «Открыть магазин»
 """.strip()
 
-    update.message.reply_text(welcome_text, reply_markup=reply_markup)
+    await update.message.reply_text(welcome_text, reply_markup=reply_markup)
 
-def handle_web_app_data(update: Update, context: CallbackContext) -> None:
+async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработка заказов из Web App"""
     try:
-        data = json.loads(update.effective_message.web_app_data.data)
+        data = update.message.web_app_data.data
         user = update.effective_user
         
         order_text = f"""
@@ -57,11 +54,11 @@ def handle_web_app_data(update: Update, context: CallbackContext) -> None:
 📞 Телефон: {data.get('customerPhone', 'Не указан')}
 🏠 Адрес: {data.get('shippingAddress', 'Не указан')}
 
-🆔 ID пользователя: {user.id}
+🆔 ID: {user.id}
 👤 Username: @{user.username if user.username else 'не указан'}
-📅 Дата заказа: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}
+📅 Дата: {time.strftime('%d.%m.%Y %H:%M:%S')}
 
-📦 Состав заказа:
+📦 Заказ:
 ────────────────────────────
 """
         
@@ -76,19 +73,18 @@ def handle_web_app_data(update: Update, context: CallbackContext) -> None:
         
         order_text += f"""
 ────────────────────────────
-💵 Общая сумма: {data['totalAmount']} руб.
-
-⏰ Время получения: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}
+💵 Итого: {data.get('totalAmount', 0)} руб.
+⏰ Время: {time.strftime('%d.%m.%Y %H:%M:%S')}
 """
         
-        context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=order_text)
-        update.message.reply_text("✅ Заказ принят! Спасибо за покупку!")
+        await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=order_text)
+        await update.message.reply_text("✅ Заказ принят! Спасибо!")
         
     except Exception as e:
-        logger.error(f"Ошибка обработки заказа: {e}")
-        update.message.reply_text("❌ Ошибка при обработке заказа.")
+        logger.error(f"Ошибка: {e}")
+        await update.message.reply_text("❌ Ошибка при обработке заказа.")
 
-def handle_message(update: Update, context: CallbackContext):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка обычных сообщений"""
     if update.message.text and not update.message.text.startswith('/'):
         keyboard = [
@@ -96,30 +92,21 @@ def handle_message(update: Update, context: CallbackContext):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        update.message.reply_text(
-            "👋 Для открытия магазина используйте команду /start\n\nИли нажмите кнопку ниже:",
+        await update.message.reply_text(
+            "👋 Используйте /start для открытия магазина",
             reply_markup=reply_markup
         )
 
-def error(update: Update, context: CallbackContext):
-    """Обработчик ошибок"""
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
-
 def main():
     """Основная функция запуска"""
-    updater = Updater(BOT_TOKEN, use_context=True)
+    application = Application.builder().token(BOT_TOKEN).build()
     
-    dp = updater.dispatcher
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.status_update.web_app_data, handle_web_app_data))
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
-    dp.add_error_handler(error)
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    updater.start_polling()
-    logger.info("✅ Бот запущен и готов к работе")
-    
-    while True:
-        time.sleep(1)
+    application.run_polling()
+    logger.info("✅ Бот запущен")
 
 if __name__ == '__main__':
     main()
