@@ -10,39 +10,78 @@ from aiohttp import web
 BOT_TOKEN = os.getenv('BOT_TOKEN', '8290686679:AAFt8_v9X_yzeLeOhjhlk4B-eirYOGOsT5Q')
 ADMIN_CHAT_ID = os.getenv('ADMIN_CHAT_ID', '5127569065')
 PORT = int(os.getenv('PORT', 10000))
+WEBHOOK_URL = os.getenv('WEBHOOK_URL', 'https://your-render-app.onrender.com')
 
 # Глобальные переменные
-app = None
-bot_app = None
+application = None
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Обработчик команды /start с интерактивной кнопкой"""
     shop_url = "https://my-tg-shop.onrender.com"
     
-    keyboard = [[
-        InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url=shop_url))
-    ]]
+    keyboard = [
+        [InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url=shop_url))],
+        [InlineKeyboardButton("📞 Связаться с поддержкой", url="https://t.me/your_username")]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
+    welcome_text = """
+👋 *Добро пожаловать в ABKSWAGG!*
+
+🎉 *Магазин стильной одежды в черно-белом стиле*
+
+✨ *Что у нас есть:*
+• Модные футболки
+• Стильные худи
+• Удобные штаны
+• Теплые куртки
+
+🛒 *Как сделать заказ:*
+1. Нажмите кнопку "Открыть магазин"
+2. Выберите понравившиеся товары
+3. Добавьте в корзину
+4. Оформите заказ
+
+🚚 *Бесплатная доставка по всему городу!*
+⏰ *Работаем 24/7*
+""".strip()
+
     await update.message.reply_text(
-        '👋 Добро пожаловать в ABKSWAGG!\n\n'
-        'Нажмите кнопку ниже, чтобы открыть наш магазин стильной одежды.',
-        reply_markup=reply_markup
+        welcome_text,
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
     )
 
 async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Обработка данных из Web App"""
     try:
         data = json.loads(update.effective_message.web_app_data.data)
-        await process_order(data, update.effective_user)
-        await update.message.reply_text("✅ Заказ принят! Спасибо за покупку!")
+        user = update.effective_user
+        
+        # Форматируем текст заказа
+        order_text = format_order_text(data, user)
+        
+        # Отправляем заказ администратору
+        await context.bot.send_message(
+            chat_id=ADMIN_CHAT_ID, 
+            text=order_text, 
+            parse_mode='HTML'
+        )
+        
+        # Отправляем подтверждение пользователю
+        await update.message.reply_text(
+            "✅ *Ваш заказ принят!*\n\nСпасибо за покупку! Мы свяжемся с вами в ближайшее время для подтверждения заказа.",
+            parse_mode='Markdown'
+        )
+        
     except Exception as e:
-        print(f"Ошибка: {e}")
-        await update.message.reply_text("❌ Ошибка обработки заказа.")
-
-async def process_order(data, user):
-    order_text = format_order_text(data, user)
-    await bot_app.bot.send_message(chat_id=ADMIN_CHAT_ID, text=order_text, parse_mode='HTML')
+        print(f"Ошибка обработки заказа: {e}")
+        await update.message.reply_text(
+            "❌ Произошла ошибка при обработке заказа. Пожалуйста, попробуйте еще раз или свяжитесь с поддержкой."
+        )
 
 def format_order_text(data, user):
+    """Форматирование текста заказа"""
     order_text = f"""
 🛒 <b>НОВЫЙ ЗАКАЗ ИЗ МАГАЗИНА!</b>
 ══════════════════════════
@@ -77,34 +116,63 @@ def format_order_text(data, user):
     return order_text
 
 async def handle_webhook(request):
+    """Обработчик вебхуков от сайта"""
     try:
         data = await request.json()
-        await process_order(data, type('User', (), {'id': 'WEB', 'username': 'website'}))
+        
+        # Создаем mock пользователя для веб-заказов
+        web_user = type('User', (), {'id': 'WEB', 'username': 'website_user'})()
+        order_text = format_order_text(data, web_user)
+        
+        # Отправляем заказ администратору
+        await application.bot.send_message(
+            chat_id=ADMIN_CHAT_ID, 
+            text=order_text, 
+            parse_mode='HTML'
+        )
+        
         return web.Response(text='OK')
+        
     except Exception as e:
         print(f"Webhook error: {e}")
         return web.Response(text='ERROR', status=500)
 
 async def health_check(request):
+    """Проверка здоровья сервера"""
     return web.Response(text='Bot is running!')
 
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка обычных сообщений"""
+    if update.message.text and not update.message.text.startswith('/'):
+        await update.message.reply_text(
+            "👋 Для открытия магазина используйте команду /start\n\n"
+            "Или нажмите кнопку ниже:",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url="https://my-tg-shop.onrender.com"))]
+            ])
+        )
+
 async def main():
-    global bot_app, app
+    """Основная функция запуска"""
+    global application
     
-    # Инициализация бота
-    bot_app = Application.builder().token(BOT_TOKEN).build()
+    # Создаем приложение бота
+    application = Application.builder().token(BOT_TOKEN).build()
     
     # Добавляем обработчики
-    bot_app.add_handler(CommandHandler("start", start))
-    bot_app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    # Запускаем бота
-    await bot_app.initialize()
-    await bot_app.start()
+    # Настраиваем вебхук
+    await application.bot.set_webhook(f"{WEBHOOK_URL}/telegram")
     
     # Создаем HTTP сервер
     app = web.Application()
     app.router.add_post('/webhook', handle_webhook)
+    app.router.add_post('/telegram', lambda req: application.update_queue.put(
+        Update.de_json(await req.json(), application.bot)
+    ))
     app.router.add_get('/health', health_check)
     
     runner = web.AppRunner(app)
@@ -114,7 +182,8 @@ async def main():
     await site.start()
     
     print(f"✅ Бот запущен на порту {PORT}")
-    print("🌐 Webhook: /webhook")
+    print(f"🌐 Webhook URL: {WEBHOOK_URL}")
+    print("📞 Бот готов принимать заказы!")
     
     # Бесконечный цикл
     await asyncio.Future()
