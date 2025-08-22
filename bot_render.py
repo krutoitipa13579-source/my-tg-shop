@@ -15,14 +15,14 @@ PORT = int(os.getenv('PORT', 3000))  # Render сам назначает порт
 bot_application = None
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    shop_url = "https://krutoitipa13579-source.github.io/my-tg-shop/"
+    shop_url = "https://your-website-url.com"  # Замените на URL вашего сайта
     
     keyboard = [[
         InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url=shop_url))
     ]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        '👋 Добро пожаловать в FashionStore!\n\n'
+        '👋 Добро пожаловать в ABKSWAGG!\n\n'
         'Нажмите кнопку ниже, чтобы открыть каталог стильной одежды с корзиной и выбором размеров.',
         reply_markup=reply_markup
     )
@@ -84,12 +84,13 @@ async def handle_order(request):
         data = await request.json()
         print(f"Получен заказ: {data}")
         
-        # Формируем текст заказа (аналогично web_app_data)
+        # Формируем текст заказа
         order_text = "🛒 *ЗАКАЗ ИЗ МАГАЗИНА!*\n"
         order_text += "══════════════════════════\n\n"
         order_text += f"👤 *Клиент:* {data.get('customerName', 'Не указано')}\n"
         order_text += f"📞 *Телефон:* `{data.get('customerPhone', 'Не указан')}`\n"
         order_text += f"🏠 *Адрес:* {data.get('shippingAddress', 'Не указан')}\n\n"
+        order_text += f"🏪 *Магазин:* {data.get('shopName', 'ABKSWAGG')}\n\n"
         order_text += "📦 *Состав заказа:*\n"
         order_text += "────────────────────────────\n"
         
@@ -101,7 +102,8 @@ async def handle_order(request):
             order_text += f"   • Сумма: {item['price'] * item.get('quantity', 1)} руб.\n\n"
         
         order_text += "────────────────────────────\n"
-        order_text += f"💵 *Общая сумма: {data['totalAmount']} руб.*"
+        order_text += f"💵 *Общая сумма: {data['totalAmount']} руб.*\n\n"
+        order_text += f"⏰ *Время получения заказа:* {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
 
         # Отправляем заказ в Telegram
         if bot_application:
@@ -131,7 +133,7 @@ async def main():
     bot_application.add_handler(CommandHandler("start", start))
     bot_application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, web_app_data))
     
-    # ОСТАНОВИТЬ ВСЕ ПРЕДЫДУЩИЕ СЕАНСЫ (это важно!)
+    # Удаляем вебхук и ожидающие обновления
     await bot_application.bot.delete_webhook(drop_pending_updates=True)
     print("✅ Предыдущие сеансы бота остановлены")
     
@@ -143,8 +145,8 @@ async def main():
     # Создаем веб-сервер для Render с обработчиком заказов
     app = web.Application()
     app.router.add_get('/health', health_check)
-    app.router.add_post('/webhook', handle_order)  # ✅ ДОБАВЛЕНО!
-    app.router.add_post('/order', handle_order)    # ✅ Дублирующий endpoint на всякий случай
+    app.router.add_post('/webhook', handle_order)
+    app.router.add_post('/order', handle_order)  # Дублирующий endpoint
     
     runner = web.AppRunner(app)
     await runner.setup()
