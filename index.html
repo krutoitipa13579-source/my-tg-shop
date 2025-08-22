@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>FashionStore</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- GSAP для анимаций -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <style>
+    body { background: #f9fafb; }
+    .product-card { transition: transform .2s ease, box-shadow .2s ease; }
+    .product-card:hover { transform: scale(1.05); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+    .fade-in { opacity: 0; transform: translateY(20px); }
+    .slider { position: relative; overflow: hidden; }
+    .slides { display: flex; transition: transform 0.6s ease; }
+    .slide { min-width: 100%; }
+    .slider-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; cursor: pointer; }
+    .dot.active { background: #2563eb; }
+  </style>
+</head>
+<body class="font-sans text-gray-800">
+
+  <!-- Хедер -->
+  <header class="bg-white shadow-md p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">👗 FashionStore</h1>
+    <button onclick="toggleCart()" class="relative bg-blue-500 text-white px-4 py-2 rounded-xl">
+      🛒 Корзина <span id="cart-count" class="absolute -top-2 -right-2 bg-red-600 text-xs rounded-full px-2">0</span>
+    </button>
+  </header>
+
+  <!-- 🔥 Слайдер баннеров -->
+  <section class="slider mt-4 rounded-xl overflow-hidden shadow-lg">
+    <div class="slides" id="slides">
+      <div class="slide">
+        <img src="https://picsum.photos/1200/400?random=11" class="w-full object-cover">
+      </div>
+      <div class="slide">
+        <img src="https://picsum.photos/1200/400?random=12" class="w-full object-cover">
+      </div>
+      <div class="slide">
+        <img src="https://picsum.photos/1200/400?random=13" class="w-full object-cover">
+      </div>
+    </div>
+    <div class="slider-dots" id="slider-dots"></div>
+  </section>
+
+  <!-- Каталог -->
+  <main class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="product-card bg-white rounded-xl shadow p-4 fade-in">
+      <img src="https://picsum.photos/300/300?random=1" class="rounded-lg w-full h-64 object-cover">
+      <h2 class="mt-3 font-bold text-lg">Футболка Oversize</h2>
+      <p class="text-gray-500">Стильная свободная футболка</p>
+      <p class="font-semibold mt-2">1200 руб.</p>
+      <select id="size-1" class="border p-2 rounded w-full mt-2">
+        <option>Размер M</option>
+        <option>Размер L</option>
+        <option>Размер XL</option>
+      </select>
+      <button onclick="addToCart(1, 'Футболка Oversize', 1200, document.getElementById('size-1').value)" class="mt-3 w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600">Добавить</button>
+    </div>
+
+    <div class="product-card bg-white rounded-xl shadow p-4 fade-in">
+      <img src="https://picsum.photos/300/300?random=2" class="rounded-lg w-full h-64 object-cover">
+      <h2 class="mt-3 font-bold text-lg">Джинсы Slim</h2>
+      <p class="text-gray-500">Удобные джинсы прямого кроя</p>
+      <p class="font-semibold mt-2">2500 руб.</p>
+      <select id="size-2" class="border p-2 rounded w-full mt-2">
+        <option>Размер 30</option>
+        <option>Размер 32</option>
+        <option>Размер 34</option>
+      </select>
+      <button onclick="addToCart(2, 'Джинсы Slim', 2500, document.getElementById('size-2').value)" class="mt-3 w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600">Добавить</button>
+    </div>
+
+    <div class="product-card bg-white rounded-xl shadow p-4 fade-in">
+      <img src="https://picsum.photos/300/300?random=3" class="rounded-lg w-full h-64 object-cover">
+      <h2 class="mt-3 font-bold text-lg">Куртка Bomber</h2>
+      <p class="text-gray-500">Легкая куртка для осени</p>
+      <p class="font-semibold mt-2">3500 руб.</p>
+      <select id="size-3" class="border p-2 rounded w-full mt-2">
+        <option>Размер M</option>
+        <option>Размер L</option>
+        <option>Размер XL</option>
+      </select>
+      <button onclick="addToCart(3, 'Куртка Bomber', 3500, document.getElementById('size-3').value)" class="mt-3 w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600">Добавить</button>
+    </div>
+  </main>
+
+  <!-- Корзина -->
+  <div id="cart-modal" class="fixed top-0 left-0 w-full h-full bg-black/50 hidden flex justify-center items-center">
+    <div class="bg-white rounded-xl shadow-lg p-6 w-96">
+      <h2 class="text-xl font-bold mb-4">🛒 Корзина</h2>
+      <div id="cart-items" class="space-y-2"></div>
+      <p id="cart-total" class="mt-4 font-bold">Итого: 0 руб.</p>
+      <button onclick="checkout()" class="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Оформить заказ</button>
+      <button onclick="toggleCart()" class="mt-2 w-full bg-gray-300 py-2 rounded-lg">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- Оформление заказа -->
+  <div id="checkout-modal" class="fixed top-0 left-0 w-full h-full bg-black/50 hidden flex justify-center items-center">
+    <div class="bg-white rounded-xl shadow-lg p-6 w-96">
+      <h2 class="text-xl font-bold mb-4">📝 Оформление заказа</h2>
+      <input id="name" class="border p-2 rounded w-full mb-2" placeholder="Ваше имя">
+      <input id="phone" class="border p-2 rounded w-full mb-2" placeholder="Телефон">
+      <input id="address" class="border p-2 rounded w-full mb-2" placeholder="Адрес доставки">
+      <button onclick="submitOrder()" class="mt-2 w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600">Отправить</button>
+      <button onclick="toggleCheckout()" class="mt-2 w-full bg-gray-300 py-2 rounded-lg">Назад</button>
+    </div>
+  </div>
+
+  <script>
+    let cart = [];
+    let currentSlide = 0;
+
+    // 🔥 Анимация каталога
+    function animateProducts() {
+      gsap.to(".fade-in", { duration: 0.8, y: 0, opacity: 1, stagger: 0.2 });
+    }
+    window.onload = () => { animateProducts(); initSlider(); };
+
+    // 🛒 Корзина
+    function addToCart(id, name, price, size) {
+      const existing = cart.find(p => p.id === id && p.size === size);
+      if (existing) existing.quantity++;
+      else cart.push({ id, name, price, size, quantity: 1 });
+      updateCartUI();
+      gsap.from("#cart-count", { scale: 1.5, duration: 0.3, ease: "bounce" });
+    }
+
+    function updateCartUI() {
+      document.getElementById("cart-count").textContent = cart.reduce((s, p) => s + p.quantity, 0);
+      const itemsDiv = document.getElementById("cart-items");
+      itemsDiv.innerHTML = "";
+      cart.forEach((p, i) => {
+        itemsDiv.innerHTML += `<div class="flex justify-between items-center">
+          <span>${p.name} (${p.size}) ×${p.quantity}</span>
+          <button onclick="removeFromCart(${i})" class="text-red-500">✖</button>
+        </div>`;
+      });
+      document.getElementById("cart-total").textContent = "Итого: " + cart.reduce((s, p) => s + p.price * p.quantity, 0) + " руб.";
+    }
+
+    function removeFromCart(index) { cart.splice(index, 1); updateCartUI(); }
+    function toggleCart() { document.getElementById("cart-modal").classList.toggle("hidden"); }
+    function checkout() { toggleCart(); document.getElementById("checkout-modal").classList.remove("hidden"); }
+    function toggleCheckout() { document.getElementById("checkout-modal").classList.add("hidden"); }
+
+    // 📦 Отправка заказа
+    async function submitOrder() {
+      const customerName = document.getElementById("name").value;
+      const customerPhone = document.getElementById("phone").value;
+      const shippingAddress = document.getElementById("address").value;
+      const totalAmount = cart.reduce((s, p) => s + p.price * p.quantity, 0);
+
+      const orderData = { customerName, customerPhone, shippingAddress, products: cart, totalAmount };
+
+      try {
+        await fetch("https://my-tg-shop.onrender.com/webhook", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(orderData)
+        });
+        if (window.Telegram && window.Telegram.WebApp) {
+          window.Telegram.WebApp.sendData(JSON.stringify(orderData));
+        }
+        document.getElementById("checkout-modal").innerHTML = `
+          <div class="text-center">
+            <h2 class="text-xl font-bold">✅ Спасибо за заказ!</h2>
+            <p class="mt-2">Мы свяжемся с вами для подтверждения.</p>
+          </div>`;
+      } catch (e) { alert("❌ Ошибка при отправке заказа"); }
+    }
+
+    // 🎠 Слайдер
+    function initSlider() {
+      const slides = document.getElementById("slides");
+      const dotsContainer = document.getElementById("slider-dots");
+      const totalSlides = slides.children.length;
+
+      for (let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement("div");
+        dot.classList.add("dot");
+        if (i === 0) dot.classList.add("active");
+        dot.onclick = () => showSlide(i);
+        dotsContainer.appendChild(dot);
+      }
+
+      setInterval(() => { showSlide((currentSlide + 1) % totalSlides); }, 5000);
+    }
+
+    function showSlide(index) {
+      const slides = document.getElementById("slides");
+      const dots = document.querySelectorAll(".dot");
+      currentSlide = index;
+      slides.style.transform = `translateX(-${index * 100}%)`;
+      dots.forEach((d, i) => d.classList.toggle("active", i === index));
+    }
+  </script>
+</body>
+  </html>
