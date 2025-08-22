@@ -1,5 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
+from telegram.ext import filters
 import json
 from datetime import datetime
 import os
@@ -173,6 +174,10 @@ def health_check():
     """Проверка здоровья сервера"""
     return jsonify({'status': 'running'})
 
+def error(update: Update, context: CallbackContext):
+    """Обработчик ошибок"""
+    logger.warning('Update "%s" caused error "%s"', update, context.error)
+
 def main():
     """Основная функция запуска"""
     global updater
@@ -183,15 +188,16 @@ def main():
     # Добавляем обработчики
     dp = updater.dispatcher
     dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.status_update.web_app_data, handle_web_app_data))
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+    dp.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+    dp.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    dp.add_error_handler(error)
     
     # Запускаем polling
     updater.start_polling()
     logger.info("✅ Бот запущен и готов к работе")
     
     # Запускаем Flask сервер
-    app.run(host='0.0.0.0', port=PORT, debug=False)
+    app.run(host='0.0.0.0', port=PORT, debug=False, use_reloader=False)
 
 if __name__ == '__main__':
     main()
