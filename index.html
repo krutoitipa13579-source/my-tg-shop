@@ -1,75 +1,83 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FashionStore - Магазин одежды</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>FashionStore - Интернет-магазин</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
+            color: #333;
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
         
         .header {
             text-align: center;
             margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         
         .header h1 {
-            color: white;
-            font-size: 2.5em;
+            color: #2c3e50;
+            font-size: 2.8em;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
         
         .header p {
-            color: rgba(255,255,255,0.8);
-            font-size: 1.1em;
+            color: #7f8c8d;
+            font-size: 1.2em;
         }
         
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 80px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 100px;
         }
         
         .product-card {
             background: white;
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
         
         .product-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
         }
         
         .product-image {
             width: 100%;
-            height: 250px;
+            height: 220px;
             object-fit: cover;
             border-bottom: 3px solid #f8f9fa;
         }
         
         .product-info {
             padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
         }
         
         .product-title {
@@ -77,6 +85,13 @@
             font-weight: 600;
             color: #2c3e50;
             margin-bottom: 10px;
+        }
+        
+        .product-description {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            flex-grow: 1;
         }
         
         .product-price {
@@ -116,7 +131,6 @@
             background: #3498db;
             color: white;
             border-color: #3498db;
-            transform: scale(1.05);
         }
         
         .add-to-cart {
@@ -130,6 +144,7 @@
             font-size: 1em;
             font-weight: 600;
             transition: transform 0.2s ease;
+            margin-top: auto;
         }
         
         .add-to-cart:hover {
@@ -142,14 +157,14 @@
             right: 30px;
             background: linear-gradient(135deg, #e74c3c 0%, #e67e22 100%);
             color: white;
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5em;
-            box-shadow: 0 5px 20px rgba(231, 76, 60, 0.4);
+            font-size: 1.8em;
+            box-shadow: 0 5px 20px rgba(231, 76, 60, 0.5);
             cursor: pointer;
             z-index: 1000;
             transition: transform 0.2s ease;
@@ -165,8 +180,8 @@
             right: -5px;
             background: #2c3e50;
             color: white;
-            width: 25px;
-            height: 25px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             font-size: 0.8em;
             font-weight: bold;
@@ -181,16 +196,178 @@
             right: 20px;
             background: #27ae60;
             color: white;
-            padding: 15px 20px;
+            padding: 15px 25px;
             border-radius: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             z-index: 1000;
             transform: translateX(100%);
             transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .notification.show {
             transform: translateX(0);
+        }
+
+        /* Стили для модального окна */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #2c3e50;
+            font-size: 1.8em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .modal-input:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .modal-input.error {
+            border-color: #e74c3c;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            padding: 14px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+
+        .modal-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .modal-btn.secondary {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .modal-btn.secondary:hover {
+            background: #c0392b;
+        }
+
+        .order-summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .order-summary h4 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .order-total {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #ddd;
+        }
+
+        @media (max-width: 1200px) {
+            .products-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .products-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                padding: 20px;
+            }
+            
+            .modal-buttons {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -206,6 +383,7 @@
                 <img src="https://via.placeholder.com/400x300?text=Футболка" alt="Футболка" class="product-image">
                 <div class="product-info">
                     <h3 class="product-title">Футболка оверсайз премиум</h3>
+                    <p class="product-description">Модная футболка oversize из качественного хлопка с принтом.</p>
                     <div class="product-price">1 999 ₽</div>
                     <div class="sizes-container">
                         <div class="sizes-title">Размер:</div>
@@ -226,6 +404,7 @@
                 <img src="https://via.placeholder.com/400x300?text=Худи" alt="Худи" class="product-image">
                 <div class="product-info">
                     <h3 class="product-title">Худи с капюшоном премиум</h3>
+                    <p class="product-description">Теплое и стильное худи из качественного материала с карманом.</p>
                     <div class="product-price">4 499 ₽</div>
                     <div class="sizes-container">
                         <div class="sizes-title">Размер:</div>
@@ -246,6 +425,7 @@
                 <img src="https://via.placeholder.com/400x300?text=Штаны" alt="Штаны" class="product-image">
                 <div class="product-info">
                     <h3 class="product-title">Спортивные штаны премиум</h3>
+                    <p class="product-description">Удобные спортивные штаны для тренировок и повседневной носки.</p>
                     <div class="product-price">2 799 ₽</div>
                     <div class="sizes-container">
                         <div class="sizes-title">Размер:</div>
@@ -261,6 +441,109 @@
                     </button>
                 </div>
             </div>
+            
+            <div class="product-card">
+                <img src="https://via.placeholder.com/400x300?text=Куртка" alt="Куртка" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Куртка утепленная</h3>
+                    <p class="product-description">Теплая куртка для холодной погоды с современным дизайном.</p>
+                    <div class="product-price">5 999 ₽</div>
+                    <div class="sizes-container">
+                        <div class="sizes-title">Размер:</div>
+                        <div class="sizes">
+                            <button class="size-btn" onclick="selectSize(this, 'M')">M</button>
+                            <button class="size-btn" onclick="selectSize(this, 'L')">L</button>
+                            <button class="size-btn" onclick="selectSize(this, 'XL')">XL</button>
+                        </div>
+                    </div>
+                    <button class="add-to-cart" onclick="addToCart('Куртка утепленная', 5999, 'https://via.placeholder.com/400x300?text=Куртка')">
+                        🛒 Добавить в корзину
+                    </button>
+                </div>
+            </div>
+            
+            <div class="product-card">
+                <img src="https://via.placeholder.com/400x300?text=Джинсы" alt="Джинсы" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Джинсы скинни</h3>
+                    <p class="product-description">Стильные джинсы скинни из качественного денима.</p>
+                    <div class="product-price">3 499 ₽</div>
+                    <div class="sizes-container">
+                        <div class="sizes-title">Размер:</div>
+                        <div class="sizes">
+                            <button class="size-btn" onclick="selectSize(this, '28')">28</button>
+                            <button class="size-btn" onclick="selectSize(this, '30')">30</button>
+                            <button class="size-btn" onclick="selectSize(this, '32')">32</button>
+                            <button class="size-btn" onclick="selectSize(this, '34')">34</button>
+                        </div>
+                    </div>
+                    <button class="add-to-cart" onclick="addToCart('Джинсы скинни', 3499, 'https://via.placeholder.com/400x300?text=Джинсы')">
+                        🛒 Добавить в корзину
+                    </button>
+                </div>
+            </div>
+            
+            <div class="product-card">
+                <img src="https://via.placeholder.com/400x300?text=Футболка2" alt="Футболка" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Футболка базовая</h3>
+                    <p class="product-description">Классическая футболка из 100% хлопка для повседневной носки.</p>
+                    <div class="product-price">1 299 ₽</div>
+                    <div class="sizes-container">
+                        <div class="sizes-title">Размер:</div>
+                        <div class="sizes">
+                            <button class="size-btn" onclick="selectSize(this, 'S')">S</button>
+                            <button class="size-btn" onclick="selectSize(this, 'M')">M</button>
+                            <button class="size-btn" onclick="selectSize(this, 'L')">L</button>
+                        </div>
+                    </div>
+                    <button class="add-to-cart" onclick="addToCart('Футболка базовая', 1299, 'https://via.placeholder.com/400x300?text=Футболка2')">
+                        🛒 Добавить в корзину
+                    </button>
+                </div>
+            </div>
+            
+            <div class="product-card">
+                <img src="https://via.placeholder.com/400x300?text=Кроссовки" alt="Кроссовки" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Кроссовки спортивные</h3>
+                    <p class="product-description">Удобные кроссовки для спорта и повседневной носки.</p>
+                    <div class="product-price">4 899 ₽</div>
+                    <div class="sizes-container">
+                        <div class="sizes-title">Размер:</div>
+                        <div class="sizes">
+                            <button class="size-btn" onclick="selectSize(this, '40')">40</button>
+                            <button class="size-btn" onclick="selectSize(this, '42')">42</button>
+                            <button class="size-btn" onclick="selectSize(this, '43')">43</button>
+                            <button class="size-btn" onclick="selectSize(this, '44')">44</button>
+                        </div>
+                    </div>
+                    <button class="add-to-cart" onclick="addToCart('Кроссовки спортивные', 4899, 'https://via.placeholder.com/400x300?text=Кроссовки')">
+                        🛒 Добавить в корзину
+                    </button>
+                </div>
+            </div>
+            
+            <div class="product-card">
+                <img src="https://via.placeholder.com/400x300?text=Рубашка" alt="Рубашка" class="product-image">
+                <div class="product-info">
+                    <h3 class="product-title">Рубашка офисная</h3>
+                    <p class="product-description">Классическая рубашка для офиса и деловых встреч.</p>
+                    <div class="product-price">2 899 ₽</div>
+                    <div class="sizes-container">
+                        <div class="sizes-title">Размер:</div>
+                        <div class="sizes">
+                            <button class="size-btn" onclick="selectSize(this, 'S')">S</button>
+                            <button class="size-btn" onclick="selectSize(this, 'M')">M</button>
+                            <button class="size-btn" onclick="selectSize(this, 'L')">L</button>
+                            <button class="size-btn" onclick="selectSize(this, 'XL')">XL</button>
+                        </div>
+                    </div>
+                    <button class="add-to-cart" onclick="addToCart('Рубашка офисная', 2899, 'https://via.placeholder.com/400x300?text=Рубашка')">
+                        🛒 Добавить в корзину
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -270,7 +553,46 @@
     </div>
     
     <div class="notification" id="notification">
-        Товар добавлен в корзину! ✅
+        <span id="notification-text">Товар добавлен в корзину!</span>
+    </div>
+
+    <!-- Модальное окно для оформления заказа -->
+    <div class="modal" id="order-modal">
+        <div class="modal-content">
+            <h3>📦 Оформление заказа</h3>
+            
+            <div class="order-summary">
+                <h4>Ваш заказ:</h4>
+                <div id="order-items"></div>
+                <div class="order-total">
+                    <span>Итого:</span>
+                    <span id="order-total-amount">0 ₽</span>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">👤 Ваше имя</label>
+                <input type="text" id="customer-name" class="modal-input" placeholder="Иван Иванов">
+                <div class="error-message" id="name-error">Пожалуйста, введите ваше имя</div>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">📞 Ваш телефон</label>
+                <input type="tel" id="customer-phone" class="modal-input" placeholder="+7 (963) 255-55-84" maxlength="16">
+                <div class="error-message" id="phone-error">Введите корректный номер телефона (+7 и 10 цифр)</div>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">🏠 Адрес доставки</label>
+                <input type="text" id="shipping-address" class="modal-input" placeholder="г. Москва, ул. Примерная, д. 1, кв. 1">
+                <div class="error-message" id="address-error">Пожалуйста, введите адрес доставки</div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" onclick="closeModal()">Отмена</button>
+                <button class="modal-btn primary" onclick="submitOrder()">Оформить заказ</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -278,14 +600,50 @@
         let selectedSize = '';
         let currentProduct = null;
 
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Валидация номера телефона
+            const phoneInput = document.getElementById('customer-phone');
+            phoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                
+                // Ограничение на 11 цифр
+                if (value.length > 11) {
+                    value = value.slice(0, 11);
+                }
+                
+                // Форматирование номера
+                let formattedValue = '+7';
+                if (value.length > 1) {
+                    formattedValue += ' (' + value.slice(1, 4);
+                }
+                if (value.length >= 5) {
+                    formattedValue += ') ' + value.slice(4, 7);
+                }
+                if (value.length >= 8) {
+                    formattedValue += '-' + value.slice(7, 9);
+                }
+                if (value.length >= 10) {
+                    formattedValue += '-' + value.slice(9, 11);
+                }
+                
+                e.target.value = formattedValue;
+            });
+            
+            // Загрузка корзины из localStorage
+            const savedCart = localStorage.getItem('fashionStoreCart');
+            if (savedCart) {
+                cart = JSON.parse(savedCart);
+                updateCartCount();
+            }
+        });
+
         function selectSize(btn, size) {
-            // Сбрасываем выделение у всех кнопок в этом товаре
             const productCard = btn.closest('.product-card');
             productCard.querySelectorAll('.size-btn').forEach(b => {
                 b.classList.remove('selected');
             });
             
-            // Выделяем выбранную кнопку
             btn.classList.add('selected');
             selectedSize = size;
             currentProduct = productCard;
@@ -297,18 +655,31 @@
                 return;
             }
             
-            cart.push({
-                name: name,
-                price: price,
-                size: selectedSize,
-                quantity: 1,
-                image: image
-            });
+            // Проверяем, есть ли уже такой товар в корзине
+            const existingItemIndex = cart.findIndex(item => 
+                item.name === name && item.size === selectedSize
+            );
+            
+            if (existingItemIndex !== -1) {
+                // Увеличиваем количество, если товар уже есть в корзине
+                cart[existingItemIndex].quantity += 1;
+            } else {
+                // Добавляем новый товар в корзину
+                cart.push({
+                    name: name,
+                    price: price,
+                    size: selectedSize,
+                    quantity: 1,
+                    image: image
+                });
+            }
+            
+            // Сохраняем корзину в localStorage
+            localStorage.setItem('fashionStoreCart', JSON.stringify(cart));
             
             updateCartCount();
             showNotification('✅ Товар добавлен в корзину!');
             
-            // Сбрасываем выбор размера
             selectedSize = '';
             if (currentProduct) {
                 currentProduct.querySelectorAll('.size-btn').forEach(b => {
@@ -318,17 +689,20 @@
         }
 
         function updateCartCount() {
-            document.getElementById('cart-count').textContent = cart.length;
+            const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+            document.getElementById('cart-count').textContent = totalItems;
         }
 
         function showNotification(message) {
             const notification = document.getElementById('notification');
-            notification.textContent = message;
+            const notificationText = document.getElementById('notification-text');
+            
+            notificationText.textContent = message;
             notification.classList.add('show');
             
             setTimeout(() => {
                 notification.classList.remove('show');
-            }, 2000);
+            }, 3000);
         }
 
         function showCart() {
@@ -337,45 +711,142 @@
                 return;
             }
             
-            let total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            let message = '🛒 ВАША КОРЗИНА\n\n';
+            // Заполняем информацию о заказе
+            const orderItems = document.getElementById('order-items');
+            const orderTotalAmount = document.getElementById('order-total-amount');
             
-            cart.forEach((item, index) => {
-                message += `${index + 1}. ${item.name}\n`;
-                message += `   Размер: ${item.size}\n`;
-                message += `   Цена: ${item.price} ₽\n`;
-                message += `   Кол-во: ${item.quantity}\n`;
-                message += `   ──────────────────\n`;
+            orderItems.innerHTML = '';
+            let total = 0;
+            
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                
+                const itemElement = document.createElement('div');
+                itemElement.className = 'order-item';
+                itemElement.innerHTML = `
+                    <span>${item.name} (${item.size}) x${item.quantity}</span>
+                    <span>${itemTotal.toLocaleString()} ₽</span>
+                `;
+                
+                orderItems.appendChild(itemElement);
             });
             
-            message += `\n💰 ОБЩАЯ СУММА: ${total} ₽\n\n`;
-            message += 'Оформить заказ?';
+            orderTotalAmount.textContent = total.toLocaleString() + ' ₽';
             
-            if (confirm(message)) {
-                collectOrderData(total);
-            }
+            // Показываем модальное окно
+            document.getElementById('order-modal').style.display = 'flex';
         }
 
-        function collectOrderData(totalAmount) {
-            const name = prompt('👤 Введите ваше имя:');
-            if (!name) return;
-            
-            const phone = prompt('📞 Введите ваш телефон:');
-            if (!phone) return;
-            
-            const address = prompt('🏠 Введите адрес доставки:');
-            if (!address) return;
+        function closeModal() {
+            document.getElementById('order-modal').style.display = 'none';
+            clearErrors();
+        }
 
+        function clearErrors() {
+            document.getElementById('customer-name').classList.remove('error');
+            document.getElementById('customer-phone').classList.remove('error');
+            document.getElementById('shipping-address').classList.remove('error');
+            
+            document.getElementById('name-error').style.display = 'none';
+            document.getElementById('phone-error').style.display = 'none';
+            document.getElementById('address-error').style.display = 'none';
+        }
+
+        function showError(inputId, errorId) {
+            document.getElementById(inputId).classList.add('error');
+            document.getElementById(errorId).style.display = 'block';
+        }
+
+        function validateForm() {
+            clearErrors();
+            
+            const name = document.getElementById('customer-name').value.trim();
+            const phone = document.getElementById('customer-phone').value.trim();
+            const address = document.getElementById('shipping-address').value.trim();
+            
+            let isValid = true;
+            
+            if (!name) {
+                showError('customer-name', 'name-error');
+                isValid = false;
+            }
+            
+            // Проверяем, что телефон содержит 11 цифр (включая +7)
+            const phoneDigits = phone.replace(/\D/g, '');
+            if (phoneDigits.length !== 11 || !phoneDigits.startsWith('7')) {
+                showError('customer-phone', 'phone-error');
+                isValid = false;
+            }
+            
+            if (!address) {
+                showError('shipping-address', 'address-error');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        async function submitOrder() {
+            if (!validateForm()) {
+                return;
+            }
+            
+            const name = document.getElementById('customer-name').value.trim();
+            const phone = document.getElementById('customer-phone').value.trim();
+            const address = document.getElementById('shipping-address').value.trim();
+            
+            const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
             const orderData = {
                 products: cart,
                 totalAmount: totalAmount,
                 customerName: name,
                 customerPhone: phone,
-                shippingAddress: address
+                shippingAddress: address,
+                date: new Date().toLocaleString('ru-RU')
             };
+            
+            try {
+                // 🔥 ОТПРАВКА НА ВАШ СЕРВЕР
+                const response = await fetch('https://my-tg-shop.onrender.com/webhook', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                
+                // Дублируем отправку на резервный endpoint
+                await fetch('https://my-tg-shop.onrender.com/order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(orderData)
+                });
 
-            Telegram.WebApp.sendData(JSON.stringify(orderData));
-            Telegram.WebApp.close();
+                if (response.ok) {
+                    showNotification('✅ Заказ успешно оформлен!');
+                    
+                    // Очищаем корзину
+                    cart = [];
+                    localStorage.removeItem('fashionStoreCart');
+                    updateCartCount();
+                    
+                    closeModal();
+                    
+                    // Очищаем поля формы
+                    document.getElementById('customer-name').value = '';
+                    document.getElementById('customer-phone').value = '';
+                    document.getElementById('shipping-address').value = '';
+                } else {
+                    showNotification('❌ Ошибка при оформлении заказа');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification('❌ Ошибка сети. Попробуйте еще раз.');
+            }
         }
     </script>
 </body>
