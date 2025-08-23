@@ -2,19 +2,8 @@ import os
 import json
 import logging
 from datetime import datetime
-from telegram import (
-    Update, 
-    InlineKeyboardButton, 
-    InlineKeyboardMarkup, 
-    WebAppInfo
-)
-from telegram.ext import (
-    Application, 
-    CommandHandler, 
-    MessageHandler, 
-    ContextTypes, 
-    filters
-)
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 # 🔹 Логирование
 logging.basicConfig(
@@ -23,8 +12,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # 🔹 Настройки
-BOT_TOKEN = os.getenv("BOT_TOKEN", "ТОКЕН_ТВОЕГО_БОТА")
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "5127569065")  # твой ID
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
 
 # ---------- Команды ----------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -51,6 +40,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 """.strip()
 
     await update.message.reply_text(welcome_text, reply_markup=reply_markup)
+
 
 async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка заказов из WebApp"""
@@ -97,6 +87,7 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
         logger.error(f"Ошибка обработки заказа: {e}")
         await update.message.reply_text("❌ Ошибка при обработке заказа.")
 
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Ответ на любые текстовые сообщения"""
     if update.message.text and not update.message.text.startswith("/"):
@@ -110,16 +101,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup
         )
 
-# ---------- Запуск ----------
+# ---------- Основная функция ----------
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
+    # Обработчики
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     logger.info("✅ Бот запущен")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
