@@ -12,8 +12,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # 🔹 Настройки
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # переменная окружения на Render
+ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))  # твой Telegram ID
 
 # ---------- Команды ----------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
