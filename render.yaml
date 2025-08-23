@@ -1,5 +1,5 @@
 services:
-  - type: worker       # важно: worker, а не web
+  - type: worker       # важное: worker, а не web
     name: abkswaga-bot
     env: python
     buildCommand: pip install -r requirements.txt
