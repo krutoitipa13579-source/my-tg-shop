@@ -1,11 +1,12 @@
 services:
-  - type: worker
+  - type: worker       # важно: worker, а не web
     name: abkswaga-bot
     env: python
-    buildCommand: pip install -r app/requirements.txt
-    startCommand: python app/bot.py
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot_render.py
     envVars:
       - key: BOT_TOKEN
         value: 8290686679:AAFt8_v9X_yzeLeOhjhlk4B-eirYOGOsT5Q
       - key: ADMIN_CHAT_ID
         value: 5127569065
+        
