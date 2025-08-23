@@ -1,1 +1,2 @@
 python-telegram-bot==20.6
+git commit -m "chore: simplify requirements to PTB v20.6 only"
