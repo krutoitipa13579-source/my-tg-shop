@@ -1,28 +1,41 @@
 import os
+import json
 import logging
-import time
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from datetime import datetime
+from telegram import (
+    Update, 
+    InlineKeyboardButton, 
+    InlineKeyboardMarkup, 
+    WebAppInfo
+)
+from telegram.ext import (
+    Application, 
+    CommandHandler, 
+    MessageHandler, 
+    ContextTypes, 
+    filters
+)
 
-# Настройка логирования
+# 🔹 Логирование
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# Настройки
-BOT_TOKEN = os.getenv('BOT_TOKEN', '8290686679:AAFt8_v9X_yzeLeOhjhlk4B-eirYOGOsT5Q')
-ADMIN_CHAT_ID = os.getenv('ADMIN_CHAT_ID', '5127569065')
+# 🔹 Настройки
+BOT_TOKEN = os.getenv("BOT_TOKEN", "ТОКЕН_ТВОЕГО_БОТА")
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "5127569065")  # твой ID
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Команда /start с кнопками"""
+# ---------- Команды ----------
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Приветствие и кнопки"""
     keyboard = [
-        [InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url="https://my-tg-shop.onrender.com"))],
-        [InlineKeyboardButton("👤 Мой профиль", callback_data="profile")]
+        [InlineKeyboardButton("🛍️ Магазин", web_app=WebAppInfo(url="https://my-tg-shop.onrender.com"))],
+        [InlineKeyboardButton("👤 Профиль", callback_data="profile")],
+        [InlineKeyboardButton("📞 Поддержка", url="https://t.me/your_support")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    
+
     welcome_text = """
 👋 Добро пожаловать в ABKSWAGA!
 
@@ -30,39 +43,36 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 ✨ Преимущества:
 • Быстрая доставка
-• Качественные материалы
+• Качественные материалы  
 • Стильные модели
 • Доступные цены
 
-🛒 Чтобы начать покупки:
-Нажмите кнопку «Открыть магазин»
+🛒 Чтобы начать покупки — нажмите «Магазин» ниже 👇
 """.strip()
 
     await update.message.reply_text(welcome_text, reply_markup=reply_markup)
 
-async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Обработка заказов из Web App"""
+async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка заказов из WebApp"""
     try:
-        data = update.message.web_app_data.data
+        data = json.loads(update.effective_message.web_app_data.data)
         user = update.effective_user
-        
-        order_text = f"""
-🛒 НОВЫЙ ЗАКАЗ ИЗ WEB APP!
-══════════════════════════
 
+        order_text = f"""
+🛒 НОВЫЙ ЗАКАЗ!
+═══════════════════════
 👤 Клиент: {data.get('customerName', 'Не указано')}
 📞 Телефон: {data.get('customerPhone', 'Не указан')}
 🏠 Адрес: {data.get('shippingAddress', 'Не указан')}
 
-🆔 ID: {user.id}
+🆔 UserID: {user.id}
 👤 Username: @{user.username if user.username else 'не указан'}
-📅 Дата: {time.strftime('%d.%m.%Y %H:%M:%S')}
+📅 Время заказа: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}
 
-📦 Заказ:
-────────────────────────────
+📦 Товары:
+────────────────────────
 """
-        
-        for i, item in enumerate(data.get('products', []), 1):
+        for i, item in enumerate(data.get("products", []), 1):
             order_text += f"""
 {i}. {item['name']}
    • Размер: {item.get('size', 'Не выбран')}
@@ -70,43 +80,46 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
    • Кол-во: {item.get('quantity', 1)}
    • Сумма: {item['price'] * item.get('quantity', 1)} руб.
 """
-        
+
         order_text += f"""
-────────────────────────────
-💵 Итого: {data.get('totalAmount', 0)} руб.
-⏰ Время: {time.strftime('%d.%m.%Y %H:%M:%S')}
+────────────────────────
+💵 ИТОГО: {data['totalAmount']} руб.
+⏰ Получение: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}
 """
-        
+
+        # Отправляем админу
         await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=order_text)
-        await update.message.reply_text("✅ Заказ принят! Спасибо!")
-        
+
+        # Подтверждаем клиенту
+        await update.message.reply_text("✅ Заказ принят! Спасибо за покупку!")
+
     except Exception as e:
-        logger.error(f"Ошибка: {e}")
+        logger.error(f"Ошибка обработки заказа: {e}")
         await update.message.reply_text("❌ Ошибка при обработке заказа.")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработка обычных сообщений"""
-    if update.message.text and not update.message.text.startswith('/'):
+    """Ответ на любые текстовые сообщения"""
+    if update.message.text and not update.message.text.startswith("/"):
         keyboard = [
-            [InlineKeyboardButton("🛍️ Открыть магазин", web_app=WebAppInfo(url="https://my-tg-shop.onrender.com"))]
+            [InlineKeyboardButton("🛍️ Магазин", web_app=WebAppInfo(url="https://my-tg-shop.onrender.com"))]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        
+
         await update.message.reply_text(
-            "👋 Используйте /start для открытия магазина",
+            "👋 Чтобы открыть магазин, нажмите кнопку ниже:",
             reply_markup=reply_markup
         )
 
+# ---------- Запуск ----------
 def main():
-    """Основная функция запуска"""
-    application = Application.builder().token(BOT_TOKEN).build()
-    
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
-    application.run_polling()
-    logger.info("✅ Бот запущен")
+    app = Application.builder().token(BOT_TOKEN).build()
 
-if __name__ == '__main__':
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    logger.info("✅ Бот запущен")
+    app.run_polling()
+
+if __name__ == "__main__":
     main()
